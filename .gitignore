@@ -1,0 +1,9 @@
+node_modules/
+dist/
+*.tsbuildinfo
+.env
+*.db
+*.db-journal
+apps/storage/resumes/
+test-results/
+playwright-report/

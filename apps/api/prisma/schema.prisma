@@ -1,0 +1,352 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  CANDIDATE
+  EMPLOYER
+  ADMIN
+}
+
+enum Level {
+  BEGINNER
+  INTERMEDIATE
+  ADVANCED
+  EXPERT
+}
+
+enum ApplicationStatus {
+  SUBMITTED
+  REVIEWING
+  SHORTLISTED
+  REJECTED
+  WITHDRAWN
+}
+
+model User {
+  id Int @id @default(autoincrement())
+  email String @unique
+  passwordHash String
+  name String
+  role Role
+  createdAt DateTime @default(now())
+  candidate Candidate?
+  employer Employer?
+}
+
+model Candidate {
+  id Int @id @default(autoincrement())
+  userId Int @unique
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  headline String?
+  location String?
+  bio String?
+  discoverable Boolean @default(false)
+  preferredRoles String @default("")
+  preferredLocations String @default("")
+  arrangements String @default("")
+  skills CandidateSkill[]
+  applications Application[]
+  savedJobs SavedJob[]
+  learning LearningProgress[]
+  resumes Resume[]
+  resumeAnalyses ResumeAnalysis[]
+  resumeJobMatches ResumeJobMatch[]
+  externalJobMatches ExternalJobMatch[]
+  savedExternalJobs SavedExternalJob[]
+  externalApplications ExternalApplicationTracker[]
+}
+
+model Employer {
+  id Int @id @default(autoincrement())
+  userId Int @unique
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  companyName String
+  industry String
+  description String
+  jobs Job[]
+}
+
+model Skill {
+  id Int @id @default(autoincrement())
+  name String @unique
+  normalized String @unique
+  category String
+  aliases String @default("")
+  candidateSkills CandidateSkill[]
+  requirements JobSkill[]
+  resources LearningResource[]
+  externalRequirements ExternalJobSkill[]
+}
+
+model CandidateSkill {
+  id Int @id @default(autoincrement())
+  candidateId Int
+  skillId Int
+  level Level
+  evidenceType String?
+  evidenceUrl String?
+  candidate Candidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  skill Skill @relation(fields: [skillId], references: [id])
+  @@unique([candidateId, skillId])
+}
+
+model Job {
+  id Int @id @default(autoincrement())
+  employerId Int
+  title String
+  description String
+  location String
+  arrangement String
+  employmentType String
+  industry String
+  salary String?
+  deadline DateTime?
+  published Boolean @default(true)
+  createdAt DateTime @default(now())
+  employer Employer @relation(fields: [employerId], references: [id])
+  skills JobSkill[]
+  applications Application[]
+  savedBy SavedJob[]
+  resumeMatches ResumeJobMatch[]
+}
+
+model JobSkill {
+  id Int @id @default(autoincrement())
+  jobId Int
+  skillId Int
+  level Level
+  required Boolean
+  job Job @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  skill Skill @relation(fields: [skillId], references: [id])
+  @@unique([jobId, skillId])
+}
+
+model Application {
+  id Int @id @default(autoincrement())
+  candidateId Int
+  jobId Int
+  status ApplicationStatus @default(SUBMITTED)
+  coverNote String?
+  createdAt DateTime @default(now())
+  candidate Candidate @relation(fields: [candidateId], references: [id])
+  job Job @relation(fields: [jobId], references: [id])
+  @@unique([candidateId, jobId])
+}
+
+model SavedJob {
+  id Int @id @default(autoincrement())
+  candidateId Int
+  jobId Int
+  candidate Candidate @relation(fields: [candidateId], references: [id])
+  job Job @relation(fields: [jobId], references: [id])
+  @@unique([candidateId, jobId])
+}
+
+model LearningResource {
+  id Int @id @default(autoincrement())
+  title String
+  provider String
+  url String
+  skillId Int
+  skill Skill @relation(fields: [skillId], references: [id])
+  progress LearningProgress[]
+}
+
+model LearningProgress {
+  id Int @id @default(autoincrement())
+  candidateId Int
+  resourceId Int
+  status String @default("NOT_STARTED")
+  candidate Candidate @relation(fields: [candidateId], references: [id])
+  resource LearningResource @relation(fields: [resourceId], references: [id])
+  @@unique([candidateId, resourceId])
+}
+
+model Resume {
+  id Int @id @default(autoincrement())
+  candidateId Int
+  originalFilename String
+  mimeType String
+  storageKey String @unique
+  fileSize Int
+  extractedText String
+  parsingStatus String
+  uploadedAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  candidate Candidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  analyses ResumeAnalysis[]
+  jobMatches ResumeJobMatch[]
+  @@index([candidateId, uploadedAt])
+}
+
+model ResumeAnalysis {
+  id Int @id @default(autoincrement())
+  resumeId Int
+  candidateId Int
+  readinessScore Int
+  readinessBreakdown String
+  extractedSections String
+  detectedSkills String
+  parsingIssues String
+  recommendations String
+  algorithmVersion String
+  analyzedAt DateTime @default(now())
+  resume Resume @relation(fields: [resumeId], references: [id], onDelete: Cascade)
+  candidate Candidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  suggestions ResumeSuggestion[]
+  @@index([candidateId, analyzedAt])
+  @@index([resumeId, analyzedAt])
+}
+
+model ResumeJobMatch {
+  id Int @id @default(autoincrement())
+  resumeId Int
+  candidateId Int
+  jobId Int?
+  manualJobDescription String?
+  jobTitle String?
+  jobAlignmentScore Int
+  scoreBreakdown String
+  matchedSkills String
+  missingSkills String
+  recommendations String
+  algorithmVersion String
+  analyzedAt DateTime @default(now())
+  resume Resume @relation(fields: [resumeId], references: [id], onDelete: Cascade)
+  candidate Candidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  job Job? @relation(fields: [jobId], references: [id], onDelete: SetNull)
+  @@index([candidateId, analyzedAt])
+  @@index([resumeId, analyzedAt])
+}
+
+model ResumeSuggestion {
+  id Int @id @default(autoincrement())
+  analysisId Int
+  category String
+  priority String
+  originalText String?
+  suggestedText String?
+  explanation String
+  status String @default("PENDING")
+  analysis ResumeAnalysis @relation(fields: [analysisId], references: [id], onDelete: Cascade)
+  @@index([analysisId, status])
+}
+
+model JobSource {
+  id Int @id @default(autoincrement())
+  name String @unique
+  providerType String
+  baseUrl String?
+  isEnabled Boolean @default(false)
+  authorizationStatus String @default("PENDING")
+  lastSyncAt DateTime?
+  lastErrorAt DateTime?
+  createdAt DateTime @default(now())
+  externalJobs ExternalJob[]
+  syncLogs JobSyncLog[]
+}
+
+model ExternalJob {
+  id Int @id @default(autoincrement())
+  sourceId Int
+  externalId String
+  title String
+  company String
+  location String
+  state String?
+  country String @default("Malaysia")
+  workArrangement String?
+  employmentType String?
+  industry String?
+  salaryMin Int?
+  salaryMax Int?
+  salaryCurrency String?
+  salaryText String?
+  descriptionSnippet String
+  externalUrl String
+  postedAt DateTime?
+  updatedAt DateTime?
+  lastCheckedAt DateTime @default(now())
+  expiresAt DateTime?
+  listingStatus String @default("ACTIVE")
+  sourceStatus String @default("LIVE")
+  isDemo Boolean @default(false)
+  createdAt DateTime @default(now())
+  source JobSource @relation(fields: [sourceId], references: [id], onDelete: Cascade)
+  skills ExternalJobSkill[]
+  matches ExternalJobMatch[]
+  savedBy SavedExternalJob[]
+  applications ExternalApplicationTracker[]
+  @@unique([sourceId, externalId])
+  @@index([title, location])
+  @@index([lastCheckedAt, listingStatus])
+}
+
+model ExternalJobSkill {
+  id Int @id @default(autoincrement())
+  externalJobId Int
+  skillId Int
+  requirementType String @default("UNVERIFIED")
+  extractionConfidence Float
+  extractionMethod String
+  externalJob ExternalJob @relation(fields: [externalJobId], references: [id], onDelete: Cascade)
+  skill Skill @relation(fields: [skillId], references: [id])
+  @@unique([externalJobId, skillId])
+}
+
+model ExternalJobMatch {
+  id Int @id @default(autoincrement())
+  candidateId Int
+  externalJobId Int
+  score Int?
+  scoreBreakdown String
+  algorithmVersion String
+  calculatedAt DateTime @default(now())
+  candidate Candidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  externalJob ExternalJob @relation(fields: [externalJobId], references: [id], onDelete: Cascade)
+  @@index([candidateId, calculatedAt])
+}
+
+model SavedExternalJob {
+  id Int @id @default(autoincrement())
+  candidateId Int
+  externalJobId Int
+  createdAt DateTime @default(now())
+  candidate Candidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  externalJob ExternalJob @relation(fields: [externalJobId], references: [id], onDelete: Cascade)
+  @@unique([candidateId, externalJobId])
+}
+
+model ExternalApplicationTracker {
+  id Int @id @default(autoincrement())
+  candidateId Int
+  externalJobId Int
+  status String @default("INTERESTED")
+  notes String?
+  appliedAt DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  candidate Candidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  externalJob ExternalJob @relation(fields: [externalJobId], references: [id], onDelete: Cascade)
+  @@unique([candidateId, externalJobId])
+}
+
+model JobSyncLog {
+  id Int @id @default(autoincrement())
+  sourceId Int
+  startedAt DateTime @default(now())
+  finishedAt DateTime?
+  recordsReceived Int @default(0)
+  recordsAccepted Int @default(0)
+  recordsRejected Int @default(0)
+  status String
+  errorSummary String?
+  source JobSource @relation(fields: [sourceId], references: [id], onDelete: Cascade)
+  @@index([sourceId, startedAt])
+}
