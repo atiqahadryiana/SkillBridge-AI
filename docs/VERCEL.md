@@ -5,10 +5,10 @@ Status: Supabase Postgres persistence is configured; private resume-file storage
 ## Services and routing
 
 - Import the repository as one Vercel project with its Root Directory at the repository root.
-- `api`: Express in `apps/api`, entrypoint `src/app.ts`, public at `/api` and `/api/*`. The entrypoint exports the app without opening a listener; `src/server.ts` remains the local listener.
-- `web`: Vite in `apps/web`, public at all remaining paths. Its service-scoped rewrite provides React Router deep-link fallback to `/index.html`, excluding asset paths, Vite modules, and paths containing a dot.
+- `api`: Express at the repository build root, entrypoint `apps/api/src/app.ts`, public at `/api` and `/api/*`. The entrypoint exports the app without opening a listener; `src/server.ts` remains the local listener.
+- `web`: Vite at the repository build root, output in `apps/web/dist`, public at all remaining paths. Its service-scoped rewrite provides React Router deep-link fallback to `/index.html`, excluding asset paths, Vite modules, and paths containing a dot.
 - Express receives the original `/api/...` path. Do not strip this prefix.
-- Both service builds compile `@skillbridge/shared` independently. The API also explicitly generates Prisma Client. Installation uses the root workspace lockfile.
+- Both services deliberately use `root: "."` because they share the root npm workspace, root `package-lock.json`, and `packages/shared`. Each service still has an independent build command. The API explicitly generates Prisma Client with the schema path; the web service publishes only `apps/web/dist`.
 
 ## Bindings
 
