@@ -1,6 +1,6 @@
 import { Router } from "express";
 import multer from "multer";
-import pdfParse from "pdf-parse";
+import { extractPdfText } from "./pdf-text.js";
 import mammoth from "mammoth";
 import rateLimit from "express-rate-limit";
 import { randomUUID } from "node:crypto";
@@ -60,7 +60,7 @@ export function createResumeRouter({ prisma, auth, asyncRoute }: Dependencies) {
 
   async function extractText(buffer: Buffer, mimeType: string) {
     if (mimeType === "application/pdf")
-      return cleanResumeText((await pdfParse(buffer, { max: 100 })).text);
+      return cleanResumeText(await extractPdfText(buffer));
     if (mimeType.includes("wordprocessingml"))
       return cleanResumeText((await mammoth.extractRawText({ buffer })).value);
     return cleanResumeText(buffer.toString("utf8"));

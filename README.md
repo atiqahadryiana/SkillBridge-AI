@@ -2,9 +2,11 @@
 
 Smart Job Discovery now joins internal demonstration vacancies with an authorization-gated Jooble Malaysia connector. See [docs/JOB_AGGREGATOR.md](docs/JOB_AGGREGATOR.md) for setup, safeguards, provider status, and limitations.
 
-SkillBridge AI is a working, local-first skills-based talent matching MVP for the Malaysian employment context. It compares candidate capabilities with structured job requirements, explains every score, identifies skill gaps, and supports candidate and employer workflows with persistent SQLite data.
+SkillBridge AI is a working skills-based talent matching MVP for the Malaysian employment context. It compares candidate capabilities with structured job requirements, explains every score, identifies skill gaps, and supports candidate and employer workflows with persistent Supabase Postgres data.
 
-The interface uses a warm editorial design system: nude and ivory foundations, coffee-brown actions, taupe supporting text, restrained terracotta emphasis, and espresso/chocolate dark-mode surfaces. Semantic CSS variables and Tailwind tokens keep the public, dashboard, and resume-intelligence experiences consistent.
+The interface uses a technology editorial design system derived from the SkillBridgeAI logo: cool-white foundations, navy actions, restrained cyan emphasis, and midnight-blue dark-mode surfaces. Violet is limited to supporting brand details. Semantic CSS variables and Tailwind tokens keep the public, dashboard, and resume-intelligence experiences consistent.
+
+The candidate overview uses a responsive three-column career feed: profile context and saved tools on the left, evidence-backed opportunity recommendations in the centre, and the next best skill or resume action on the right. On narrower screens, the supporting rails collapse below the main feed without hiding match limitations or demo labels.
 
 All seeded people, companies, jobs, matches, and activity figures are fictional demonstration data. Match scores are heuristic guidance indicators—not hiring probabilities, eligibility decisions, or verified competence claims.
 
@@ -22,11 +24,13 @@ All seeded people, companies, jobs, matches, and activity figures are fictional 
 
 ## Architecture
 
-The npm workspace contains `apps/web` (React + Vite + TypeScript), `apps/api` (Express + Prisma Client + SQLite), and `packages/shared` (Zod schemas and the reusable matching engine). The frontend proxies `/api` to port 4000. Prisma owns application queries; a small idempotent SQLite initializer is used because Prisma's schema engine currently fails under this machine's Node 24/Windows combination.
+The npm workspace contains `apps/web` (React + Vite + TypeScript), `apps/api` (Express + Prisma Client + Supabase Postgres), and `packages/shared` (Zod schemas and the reusable matching engine). The frontend proxies `/api` to port 4000. Prisma remains the only application persistence layer; Supabase supplies managed PostgreSQL rather than a second browser-side data client.
 
 ## Setup
 
-Requirements: Node.js 20+ and npm 10+.
+Requirements: Node.js 20+, npm 10+, and a Supabase project.
+
+Copy `.env.example` to `apps/api/.env`. In Supabase, open **Connect**, copy the transaction-pooler connection string to `DATABASE_URL`, and copy the direct/session-pooler connection string to `DIRECT_URL`. Replace the password placeholders, keep both values server-side, and set a new `SESSION_SECRET`.
 
 ```bash
 npm install
@@ -37,7 +41,7 @@ npm run dev
 
 Open `http://localhost:5173`. The API runs on `http://localhost:4000`.
 
-Copy `.env.example` to `apps/api/.env` for custom configuration. Change `SESSION_SECRET` before any shared or production deployment.
+`db:setup` generates Prisma Client, applies the checked-in PostgreSQL migration, and loads visibly fictional demo data. Do not run the seed command against a production project that contains real data. API tests additionally require `TEST_DATABASE_URL` for a disposable PostgreSQL database.
 
 ## Demo accounts
 
@@ -62,7 +66,7 @@ Unavailable criteria are removed and their weights redistributed proportionally.
 
 ```bash
 npm run dev          # web and API
-npm run db:setup     # generate client, initialize SQLite, reseed
+npm run db:setup     # generate client, migrate Supabase Postgres, seed demo data
 npm run db:seed      # reset and reseed demonstration data
 npm test             # shared unit and API tests
 npm run build        # production builds for all workspaces
@@ -86,6 +90,14 @@ npm run build        # production builds for all workspaces
 - Frontend bundle code-splitting and full Playwright coverage remain follow-up work.
 - OCR and visual layout analysis are not implemented; scanned PDFs require a text-based replacement.
 
-## Production direction
+## Employer pre-screening
 
-Use PostgreSQL, a high-entropy session secret, HTTPS-only cookies, managed secrets, and a persistent Node host for the API. Deploy the Vite output to a static host and set its API URL/CORS origin. SQLite is intended only for local demos and should not be placed on ephemeral hosting.
+The sign-in screen starts with empty credentials. Choose **Candidate demo** or **Employer demo** to fill both fields, then select **Sign in**. Password visibility can be toggled without submitting the form.
+
+Employers can configure company profiles and screening criteria, upload resumes or enter application evidence, review ranked candidates, record notes and overrides, progress hiring stages, export a shortlist, and delete candidate screening data. Outputs are advisory and exclude identity/protected fields. See [Employer screening](docs/EMPLOYER_SCREENING.md) for setup, scoring, privacy and API details. Run `npm run db:screening-demo` after the additive migration to add three fictional sample candidates.
+
+## Production deployment
+
+Use a high-entropy session secret, HTTPS-only cookies, and managed secrets in production. Configure `DATABASE_URL` with Supabase's transaction pooler and `DIRECT_URL` with its direct/session connection for migrations. Deploy the Vite output to a static host and set its API URL/CORS origin.
+
+For the proposed single-project Vercel Services deployment, see [Vercel setup](docs/VERCEL.md). The root configuration routes browser requests to the API on the same domain. Private resume-storage migration is still required before production use.

@@ -1,6 +1,6 @@
 # SkillBridge AI — Warm Editorial Design System
 
-Premium, human-centered HRTech with minimalist editorial composition. Warm ivory is the canvas; coffee brown is the only primary accent; terracotta is used sparingly; sage is reserved for positive findings.
+Premium, human-centered HRTech with minimalist editorial composition. Cool white is the canvas; deep logo navy is the primary action colour; cyan is used for focused emphasis; violet is reserved for small supporting brand details; green is reserved for positive findings.
 
 | Role | Light | Dark |
 |---|---|---|
@@ -19,8 +19,8 @@ Premium, human-centered HRTech with minimalist editorial composition. Warm ivory
 
 Instrument Sans is used for product headings, navigation, and body copy. Fraunces is reserved for selected landing-page display headlines.
 
-Cards use thin beige borders, restrained two-layer shadows, and 10–14px radii. Inputs use 6px radii. Primary buttons use coffee brown; secondary buttons use beige surfaces and taupe borders. Lucide is the only icon family.
+Cards use thin blue-grey borders, restrained two-layer shadows, and 10–14px radii. Inputs use 6px radii. Primary buttons use deep blue; secondary buttons use pale-blue surfaces and blue-grey borders. Lucide is the only icon family.
 
 Transitions stay within 150–300ms. All states retain text or icon labels instead of depending on color. Reduced-motion disables transitions and loading animation. Normal text and controls target WCAG AA contrast.
 
-Avoid purple, neon, corporate blue, pure-black dashboards, liquid-glass effects, shiny gradients, excessive shadows, and decorative continuous animation.
+Avoid decorative purple gradients, neon treatments, generic corporate-blue styling that ignores the logo hierarchy, pure-black dashboards, liquid-glass effects, shiny gradients, excessive shadows, and decorative continuous animation.

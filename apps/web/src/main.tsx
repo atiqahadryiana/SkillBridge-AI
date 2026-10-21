@@ -41,6 +41,7 @@ import {
   X,
 } from "lucide-react";
 import { ResumeWorkspace } from "./resume-workspace";
+import { EmployerScreening } from "./employer-screening";
 import {
   ApplicationTracker,
   AdminJobSources,
@@ -107,11 +108,10 @@ function useMe() {
 }
 function Logo() {
   return (
-    <Link to="/" className="logo">
-      <span>
-        <Sparkles size={18} />
+    <Link to="/" className="logo" aria-label="SkillBridge AI home">
+      <span className="logo-art">
+        <img src="/skillbridge-ai-logo.png" alt="SkillBridge AI" />
       </span>
-      SkillBridge <b>AI</b>
     </Link>
   );
 }
@@ -790,10 +790,18 @@ function AuthPage({ register = false }: { register?: boolean }) {
     client = useQueryClient();
   const [form, setForm] = useState({
     name: "",
-    email: "candidate@skillbridge.demo",
-    password: "Demo123!",
+    email: "",
+    password: "",
     role: "CANDIDATE",
   });
+  const [showPassword, setShowPassword] = useState(false);
+  const [demoRole, setDemoRole] = useState("");
+  const chooseDemo = (role: "candidate" | "employer") => {
+    mutation.reset();
+    setForm({ ...form, email: `${role}@skillbridge.demo`, password: "Demo123!" });
+    setDemoRole(role);
+    setShowPassword(false);
+  };
   const mutation = useMutation({
     mutationFn: () =>
       api<User>(`/api/auth/${register ? "register" : "login"}`, {
@@ -806,7 +814,7 @@ function AuthPage({ register = false }: { register?: boolean }) {
         u.role === "CANDIDATE"
           ? "/candidate/dashboard"
           : u.role === "EMPLOYER"
-            ? "/employer/dashboard"
+            ? register ? "/employer/screening/company" : "/employer/dashboard"
             : "/admin/dashboard",
       );
     },
@@ -818,22 +826,26 @@ function AuthPage({ register = false }: { register?: boolean }) {
       </Link>
       <form
         className="auth-card"
+        aria-busy={mutation.isPending}
         onSubmit={(e) => {
           e.preventDefault();
           mutation.mutate();
         }}
       >
         <Logo />
-        <p className="eyebrow">
+        <p className="auth-kicker">
           {register ? "Create your account" : "Welcome back"}
         </p>
         <h1>{register ? "Start with your skills." : "Sign in to continue."}</h1>
+        <p className="auth-intro">{register ? "Create a profile to explore opportunities or find talent." : "Your skills, opportunities and hiring workspace, in one place."}</p>
         {register && (
           <>
             <label>
               Full name
               <input
                 required
+                name="name"
+                autoComplete="name"
                 value={form.name}
                 onChange={(e) => setForm({ ...form, name: e.target.value })}
               />
@@ -854,22 +866,34 @@ function AuthPage({ register = false }: { register?: boolean }) {
           Email address
           <input
             type="email"
+            name="email"
+            autoComplete="username"
+            autoCapitalize="none"
+            spellCheck={false}
             required
             value={form.email}
-            onChange={(e) => setForm({ ...form, email: e.target.value })}
+            onChange={(e) => { setForm({ ...form, email: e.target.value }); setDemoRole(""); mutation.reset(); }}
           />
         </label>
-        <label>
-          Password
+        <div className="auth-password-field">
+          <label htmlFor="auth-password">Password</label>
+          <div className="auth-password-control">
           <input
-            type="password"
+            id="auth-password"
+            name="password"
+            autoComplete={register ? "new-password" : "current-password"}
+            type={showPassword ? "text" : "password"}
             required
             minLength={8}
+            aria-describedby={register ? "auth-password-hint" : undefined}
             value={form.password}
-            onChange={(e) => setForm({ ...form, password: e.target.value })}
+            onChange={(e) => { setForm({ ...form, password: e.target.value }); setDemoRole(""); mutation.reset(); }}
           />
-        </label>
-        {mutation.error && <p className="error">{mutation.error.message}</p>}
+          <button type="button" className="auth-password-toggle" aria-label={showPassword ? "Hide password" : "Show password"} aria-controls="auth-password" onClick={() => setShowPassword(!showPassword)}>{showPassword ? "Hide" : "Show"}</button>
+          </div>
+          {register && <p id="auth-password-hint" className="auth-hint">Use at least 8 characters.</p>}
+        </div>
+        {mutation.error && <p className="error" role="alert">{mutation.error.message}</p>}
         <button className="button full" disabled={mutation.isPending}>
           {mutation.isPending
             ? "Please wait…"
@@ -877,33 +901,36 @@ function AuthPage({ register = false }: { register?: boolean }) {
               ? "Create account"
               : "Sign in"}
         </button>
-        <p>
+        <p className="auth-switch">
           {register ? "Already registered?" : "New to SkillBridge?"}{" "}
           <Link to={register ? "/login" : "/register"}>
             {register ? "Log in" : "Create account"}
           </Link>
         </p>
         {!register && (
-          <div className="demo-creds">
-            <b>Demo accounts</b>
+          <section className="demo-creds" aria-labelledby="demo-heading">
+            <h2 id="demo-heading">Just exploring?</h2>
+            <p>Try a demo workspace with fictional sample data.</p>
+            <div className="demo-actions">
             <button
               type="button"
-              onClick={() =>
-                setForm({ ...form, email: "candidate@skillbridge.demo" })
-              }
+              disabled={mutation.isPending}
+              aria-pressed={demoRole === "candidate"}
+              onClick={() => chooseDemo("candidate")}
             >
-              Candidate
+              Candidate demo
             </button>
             <button
               type="button"
-              onClick={() =>
-                setForm({ ...form, email: "employer@skillbridge.demo" })
-              }
+              disabled={mutation.isPending}
+              aria-pressed={demoRole === "employer"}
+              onClick={() => chooseDemo("employer")}
             >
-              Employer
+              Employer demo
             </button>
-            <small>Password: Demo123!</small>
-          </div>
+            </div>
+            <p className="demo-status" role="status">{demoRole ? `${demoRole === "candidate" ? "Candidate" : "Employer"} demo ready. Select Sign in to continue.` : "Choose a demo to fill the email and password."}</p>
+          </section>
         )}
       </form>
     </main>
@@ -951,6 +978,7 @@ function Shell({
   const links = employer
     ? [
         ["/employer/dashboard", LayoutDashboard, "Overview"],
+        ["/employer/screening", FileSearch, "Pre-screening"],
         ["/employer/jobs/create", BriefcaseBusiness, "Post a job"],
         ["/employer/applications", FileText, "Applications"],
       ]
@@ -1124,6 +1152,104 @@ function CandidateDashboard() {
     </Shell>
   );
 }
+function CandidateFeedDashboard() {
+  const { data: p } = useQuery<any>({ queryKey: ["profile"], queryFn: () => api("/api/candidate/profile") });
+  const { data: m = [] } = useQuery<any[]>({ queryKey: ["matches"], queryFn: () => api("/api/candidate/matches") });
+  const { data: a = [] } = useQuery<any[]>({ queryKey: ["applications"], queryFn: () => api("/api/candidate/applications") });
+  const { data: resumes = [] } = useQuery<any[]>({ queryKey: ["resumes"], queryFn: () => api("/api/resume") });
+  const latestReadiness = resumes[0]?.analyses?.[0]?.readinessScore;
+  const topMatches = m.slice(0, 3);
+  const firstName = (p?.user?.name || "Aina").split(" ")[0];
+  const profileSkillCount = p?.skills?.length ?? 0;
+
+  return (
+    <Shell>
+      <div className="candidate-feed-heading">
+        <div>
+          <p className="eyebrow">Your career workspace</p>
+          <h1>Good {greeting()}, {firstName}</h1>
+          <p>Review the evidence, then choose one useful next step.</p>
+        </div>
+        <Link className="button small" to="/candidate/opportunities"><Search size={17} /> Search opportunities</Link>
+      </div>
+
+      <div className="candidate-feed-layout">
+        <aside className="candidate-profile-rail" aria-label="Profile summary">
+          <section className="feed-profile-card">
+            <div className="feed-profile-cover" />
+            <div className="feed-avatar" aria-hidden="true">{firstName.charAt(0)}</div>
+            <h2>{p?.user?.name || "Aina"}</h2>
+            <p>{p?.headline || "Building a skills-first career profile"}</p>
+            <dl>
+              <div><dt>Confirmed skills</dt><dd>{profileSkillCount}</dd></div>
+              <div><dt>Active applications</dt><dd>{a.length}</dd></div>
+            </dl>
+            <Link to="/candidate/profile">Complete your profile <ChevronRight size={15} /></Link>
+          </section>
+          <nav className="feed-quick-links" aria-label="Saved career items">
+            <Link to="/candidate/saved-jobs"><BriefcaseBusiness size={17} /> Saved jobs</Link>
+            <Link to="/candidate/application-tracker"><FileText size={17} /> Application tracker</Link>
+            <Link to="/candidate/roadmap"><Compass size={17} /> Career roadmap</Link>
+          </nav>
+        </aside>
+
+        <div className="candidate-feed-stream">
+          <section className="feed-action-card" aria-labelledby="feed-action-title">
+            <div className="feed-action-intro">
+              <div className="feed-avatar compact" aria-hidden="true">{firstName.charAt(0)}</div>
+              <div><h2 id="feed-action-title">What would you like to improve?</h2><p>Choose a workspace to continue with your own evidence.</p></div>
+            </div>
+            <div className="feed-action-row">
+              <Link to="/candidate/resume"><FileSearch size={18} /> Analyze resume</Link>
+              <Link to="/candidate/skills"><Target size={18} /> Update skills</Link>
+              <Link to="/candidate/matches"><Sparkles size={18} /> Review matches</Link>
+            </div>
+          </section>
+
+          <div className="feed-section-line"><span>Recommended for you</span><Link to="/candidate/matches">See all matches</Link></div>
+
+          {topMatches.length ? topMatches.map((x, index) => (
+            <article className="opportunity-feed-card" key={x.job.id}>
+              <header>
+                <div className="company-mark" aria-hidden="true">{x.job.employer.companyName.charAt(0)}</div>
+                <div><b>{x.job.employer.companyName}</b><span>Recommended from your confirmed skills</span></div>
+                <small>Demo</small>
+              </header>
+              <div className="opportunity-feed-body">
+                <div><p className="feed-kicker">{index === 0 ? "Strongest current match" : "Another role to compare"}</p><h2>{x.job.title}</h2><p>{x.job.location} · {x.job.arrangement}</p></div>
+                <ScoreRing score={x.match.score} size={72} />
+              </div>
+              <div className="match-evidence">
+                <div><span className="dot good" /> <b>{x.match.matched.length}</b> recognized skill matches</div>
+                <div><span className="dot warn" /> <b>{x.match.missing.length}</b> required skills not matched</div>
+              </div>
+              <p className="feed-disclaimer">Guidance only. This score is not a hiring probability or eligibility decision.</p>
+              <footer><Link className="button secondary small" to={`/jobs/${x.job.id}`}>Review evidence</Link><Link className="text-link" to="/candidate/saved-jobs">View saved roles</Link></footer>
+            </article>
+          )) : (
+            <section className="panel feed-empty"><Target size={22} /><h2>No matches to show yet</h2><p>Add confirmed skills to receive deterministic role comparisons.</p><Link className="button small" to="/candidate/skills">Add confirmed skills</Link></section>
+          )}
+        </div>
+
+        <aside className="candidate-action-rail" aria-label="Next best actions">
+          <section className="next-action-card">
+            <p className="eyebrow">Next best action</p>
+            <h2>{m[0]?.match.missing?.[0] || "Complete your evidence"}</h2>
+            <p>{m[0]?.match.missing?.length ? "This required skill is not matched in your strongest current opportunity." : "Your strongest match has no unmatched required skills."}</p>
+            <Link to="/candidate/skill-gap">Review skill gap <ChevronRight size={15} /></Link>
+          </section>
+          <section className="feed-stat-card">
+            <div><span>Resume readiness</span><b>{latestReadiness === undefined ? "—" : `${latestReadiness}/100`}</b></div>
+            <p>{latestReadiness === undefined ? "Analyze a resume to establish readiness." : "Latest completed analysis. Separate from job alignment."}</p>
+            <Link to="/candidate/resume">Open resume intelligence</Link>
+          </section>
+          <p className="feed-rail-note">Demonstration vacancies are clearly labelled. SkillBridge never infers application success from an external link.</p>
+        </aside>
+      </div>
+    </Shell>
+  );
+}
+
 function Matches() {
   const { data = [], isLoading } = useQuery<any[]>({
     queryKey: ["matches"],
@@ -1857,7 +1983,7 @@ function App() {
         path="/candidate/dashboard"
         element={
           <Guard role="CANDIDATE">
-            <CandidateDashboard />
+            <CandidateFeedDashboard />
           </Guard>
         }
       />
@@ -1987,6 +2113,7 @@ function App() {
         path="/employer/*"
         element={<Navigate to="/employer/dashboard" />}
       />
+      <Route path="/employer/screening/*" element={<Guard role="EMPLOYER"><Shell employer><EmployerScreening /></Shell></Guard>} />
       <Route
         path="/admin/job-sources"
         element={

@@ -1,5 +1,7 @@
 # Database
 
+The API uses Prisma Client against Supabase Postgres. `DATABASE_URL` is the pooled runtime connection and `DIRECT_URL` is the non-transaction-pooled migration connection. Both are backend-only secrets. Schema changes are checked into `prisma/migrations`; run `npm run db:migrate` to apply them and never run demo seeds against production data.
+
 ## External opportunities
 
 `JobSource` owns `ExternalJob` and `JobSyncLog`. `ExternalJobSkill` links unverified extracted requirements to the shared taxonomy. Candidate-owned `ExternalJobMatch`, `SavedExternalJob`, and `ExternalApplicationTracker` records are indexed and ownership-protected. Source/external-ID and candidate/job pairs are unique.
@@ -20,4 +22,4 @@ erDiagram
   RESUME_ANALYSIS ||--o{ RESUME_SUGGESTION : generates
 ```
 
-Emails, normalized skills, storage keys, and join pairs are unique. Resume JSON fields use serialized text for SQLite portability. Candidate/resume chronology is indexed. Cascade relationships remove analyses, matches, and suggestions when a resume is deleted; the service separately removes the private file. Ownership is always derived server-side.
+Emails, normalized skills, storage keys, and join pairs are unique. Resume JSON fields remain serialized text for compatibility with the existing API contracts. Candidate/resume chronology is indexed. Cascade relationships remove analyses, matches, and suggestions when a resume is deleted; the service separately removes the private file. Ownership is always derived server-side.

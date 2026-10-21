@@ -6,6 +6,7 @@ import rateLimit from "express-rate-limit";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
 import { createResumeRouter } from "./resume-routes.js";
+import { createScreeningRouter } from "./screening-routes.js";
 import {
   createExternalApplicationRouter,
   createJobSourceAdminRouter,
@@ -54,6 +55,7 @@ async function ensureSkill(name: string, category = "General") {
   });
 }
 export const app = express();
+export default app;
 app.use(helmet());
 app.use(
   cors({
@@ -421,6 +423,7 @@ app.get(
   }),
 );
 app.use("/api/resume", createResumeRouter({ prisma, auth, asyncRoute }));
+app.use("/api/employer/screening", createScreeningRouter({ prisma, auth, asyncRoute }));
 app.use(
   "/api/opportunities",
   createOpportunityRouter({ prisma, auth, asyncRoute }),

@@ -1,9 +1,11 @@
 node_modules/
+.vercel/
 dist/
 *.tsbuildinfo
 .env
 *.db
 *.db-journal
 apps/storage/resumes/
+apps/api/storage/
 test-results/
 playwright-report/

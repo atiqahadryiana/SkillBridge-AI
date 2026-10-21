@@ -64,21 +64,22 @@ Consume semantic CSS variables. Do not place primitive hex values inside new com
 
 | Role | Token | Current value |
 | --- | --- | --- |
-| Canvas | `--background`, `--surface-canvas` | `#F8F4EE` |
-| Primary ink | `--foreground` | `#2F241F` |
-| Raised surface | `--card`, `--surface-raised` | `#FFFDFC` |
-| Overlay surface | `--surface-overlay` | `#FFFAF6` |
-| Primary action | `--primary` | `#6B4F3F` |
-| Primary hover | `--primary-hover` | `#533B2E` |
+| Canvas | `--background`, `--surface-canvas` | `#F5F8FC` |
+| Primary ink | `--foreground` | `#0B1D3A` |
+| Raised surface | `--card`, `--surface-raised` | `#FFFFFF` |
+| Overlay surface | `--surface-overlay` | `#F9FBFE` |
+| Primary action | `--primary` | `#075CC5` |
+| Primary hover | `--primary-hover` | `#06499E` |
 | Primary action ink | `--primary-foreground` | `#FFFFFF` |
-| Secondary surface | `--secondary` | `#F2E9DF` |
-| Soft accent | `--accent-soft` | `#F1E4D7` |
-| Terracotta accent | `--accent` | `#B8795B` |
-| Muted ink | `--muted` | `#73665E` |
-| Muted foreground | `--muted-foreground` | `#82766E` |
-| Border | `--border` | `#E5D9CC` |
-| Input border | `--input` | `#D5BEAA` |
-| Focus ring | `--ring` | `#8A6B58` |
+| Secondary surface | `--secondary` | `#EDF3FA` |
+| Soft accent | `--accent-soft` | `#E3F5FC` |
+| Cyan accent | `--accent` | `#08AEE8` |
+| Supporting violet | `--accent-violet` | `#7047E8` |
+| Muted ink | `--muted` | `#52647D` |
+| Muted foreground | `--muted-foreground` | `#687991` |
+| Border | `--border` | `#D8E2EF` |
+| Input border | `--input` | `#AFC2D9` |
+| Focus ring | `--ring` | `#168FD5` |
 | Success | `--success` | `#2F6B54` |
 | Warning | `--warning` | `#956018` |
 | Danger | `--danger` | `#B3423D` |
@@ -86,16 +87,16 @@ Consume semantic CSS variables. Do not place primitive hex values inside new com
 
 ### Dark theme
 
-Use the existing `[data-theme="dark"]` semantic remapping. The canvas is espresso `#211813`; the card is chocolate `#2B201A`. Do not use pure black. Raise dark surfaces by increasing luminance and border contrast, not by copying light-mode shadows.
+Use the existing `[data-theme="dark"]` semantic remapping. The canvas is midnight navy `#061126`; the card is raised navy `#0C1B35`. Do not use pure black. Raise dark surfaces by increasing luminance and border contrast, not by copying light-mode shadows.
 
 ### Color rules
 
 - Keep at least 90% of each viewport neutral.
-- Use coffee brown for primary action and selection.
-- Use terracotta sparingly for emphasis, never as a competing primary action.
+- Use primary blue for actions and selections.
+- Use cyan for focused emphasis and violet only as a small supporting brand accent, never as a competing action.
 - Use success, warning, danger, and information colors only for their semantic meanings.
 - Preserve official SDG colors only where SDG identity is being represented.
-- Do not reintroduce purple, violet, neon, cool corporate blue, or gradient text.
+- Do not use decorative neon treatments, multi-colour gradients, or gradient text. The logo's blue, cyan, and violet are controlled brand colours, not a general licence for high-saturation decoration.
 
 ### Typography
 
@@ -299,8 +300,8 @@ SkillBridge currently uses deterministic local rules, not a generative model.
 
 ## 11. Anti-patterns and prohibited choices
 
-- No purple/violet AI gradients.
-- No cool corporate-blue replacement theme.
+- No purple/violet AI gradients or gradient text.
+- No generic corporate-blue treatment that ignores the supplied logo's navy/cyan hierarchy.
 - No pure-black dashboards or sidebars.
 - No decorative gradient text, glows, mesh blobs, or glass stacks.
 - No Inter, Roboto, Arial, or system font as brand voice.

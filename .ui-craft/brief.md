@@ -20,6 +20,7 @@ A candidate identifies their strongest opportunity, highest-priority documentati
 - Paid external AI dependencies
 
 # Learned constraints
+- **2026-10-21** — The supplied SkillBridgeAI technology logo is the brand-colour authority. Use deep navy for primary actions and dark surfaces, cool white and pale blue for neutral surfaces, cyan for focused emphasis, and violet only as a restrained supporting accent. This supersedes the earlier coffee-brown palette constraint while preserving the calm editorial composition.
 - **2026-10-16** — Use a nude, warm beige, taupe, and coffee-brown identity across every surface. Purple, neon, cool corporate blue, and pure-black dashboard treatments are not part of the brand.
 - **2026-10-16** — Typography uses Instrument Sans for product clarity and Fraunces for the landing hero’s editorial voice. Inter, Arial, and default system stacks are intentionally excluded.
 - **2026-10-16** — The signature landing detail is a cropped, offset resume-analysis proof surface aligned to a quiet process grid; decoration must reinforce product evidence.

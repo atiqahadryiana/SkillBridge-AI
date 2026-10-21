@@ -1,0 +1,43 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "services": {
+    "api": {
+      "root": "apps/api",
+      "framework": "express",
+      "entrypoint": "src/app.ts",
+      "installCommand": "npm --prefix ../.. ci",
+      "buildCommand": "npx prisma generate && npm --prefix ../.. run build -w @skillbridge/shared && npm --prefix ../.. run build -w @skillbridge/api"
+    },
+    "web": {
+      "root": "apps/web",
+      "framework": "vite",
+      "installCommand": "npm --prefix ../.. ci",
+      "buildCommand": "npm --prefix ../.. run build -w @skillbridge/shared && npm --prefix ../.. run build -w @skillbridge/web",
+      "outputDirectory": "dist",
+      "rewrites": [
+        {
+          "source": "/((?!assets/|src/|node_modules/|@|.*\\.).*)",
+          "destination": "/index.html"
+        }
+      ]
+    }
+  },
+  "rewrites": [
+    {
+      "source": "/api",
+      "destination": { "service": "api" }
+    },
+    {
+      "source": "/api/(.*)",
+      "destination": {
+        "service": "api"
+      }
+    },
+    {
+      "source": "/(.*)",
+      "destination": {
+        "service": "web"
+      }
+    }
+  ]
+}

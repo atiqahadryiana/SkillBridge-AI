@@ -1,5 +1,83 @@
 import { z } from "zod";
 
+export const screeningKinds = ["degree", "certifications", "experience", "authorization", "location", "requiredSkills", "niceSkills", "salary", "notice"] as const;
+export const screeningLabels: Record<typeof screeningKinds[number], string> = {
+  degree: "Required degree", certifications: "Certifications", experience: "Minimum experience (years)",
+  authorization: "Work authorization", location: "Work location", requiredSkills: "Required skills",
+  niceSkills: "Nice-to-have skills", salary: "Monthly salary range (MYR)", notice: "Maximum notice (days)",
+};
+export const screeningCriterionSchema = z.object({
+  kind: z.enum(screeningKinds), value: z.string().trim().min(1).max(500),
+  mode: z.enum(["SCORED", "KNOCKOUT"]), weight: z.number().int().min(1).max(100),
+}).strict().superRefine((c, ctx) => {
+  if (!c.value.split(",").some((v) => v.trim())) ctx.addIssue({code: "custom", message: "Enter at least one requirement", path: ["value"]});
+  if (/\b(age|gender|nationality|race|ethnicity|religion|marital|male|female|citizenship|photo)\b/i.test(c.value))
+    ctx.addIssue({code: "custom", message: "Protected characteristics cannot be screening criteria", path: ["value"]});
+  if (["experience", "notice"].includes(c.kind) && (!/^\d+(\.\d+)?$/.test(c.value) || Number(c.value) > 1000))
+    ctx.addIssue({code: "custom", message: "Enter a non-negative number up to 1000", path: ["value"]});
+  if (c.kind === "salary" && (!/^\d+\s*-\s*\d+$/.test(c.value) || Number(c.value.split("-")[0]) > Number(c.value.split("-")[1])))
+    ctx.addIssue({code: "custom", message: "Salary must be min-max, for example 3000-5000", path: ["value"]});
+  if (c.kind === "authorization" && c.value !== "required")
+    ctx.addIssue({code: "custom", message: "Use required; nationality is not a criterion", path: ["value"]});
+});
+export const screeningCriteriaSchema = z.array(screeningCriterionSchema).min(1).max(9)
+  .refine((rows) => new Set(rows.map((r) => r.kind)).size === rows.length, "Use each criterion once");
+export type ScreeningCriterion = z.infer<typeof screeningCriterionSchema>;
+const evidenceList = z.array(z.string().trim().min(1).max(160)).max(60).default([]);
+export const screeningEvidenceSchema = z.object({
+  degrees: evidenceList, certifications: evidenceList, skills: evidenceList,
+  experienceYears: z.number().min(0).max(100).nullable().default(null),
+  authorized: z.boolean().nullable().default(null),
+  location: z.string().trim().max(160).default(""),
+  salaryExpectation: z.number().min(0).max(1000000).nullable().default(null),
+  noticeDays: z.number().int().min(0).max(1000).nullable().default(null),
+}).strip();
+export type ScreeningEvidence = z.infer<typeof screeningEvidenceSchema>;
+export type ScreeningResult = ReturnType<typeof screenCandidate>;
+const screeningTerms = (s: string) => [...new Set(s.split(",").map((v) => v.trim()).filter(Boolean))];
+
+/** Only structured job-related evidence enters this function. Identity and resume prose never do. */
+export function screenCandidate(criteriaInput: ScreeningCriterion[], evidenceInput: ScreeningEvidence) {
+  const criteria = screeningCriteriaSchema.parse(criteriaInput);
+  const e = screeningEvidenceSchema.parse(evidenceInput);
+  const checklist = criteria.map((c) => {
+    let fraction = 0, unknown = false, explanation = "", failed = false;
+    let matched: string[] = [], missing: string[] = [];
+    if (["degree", "certifications", "requiredSkills", "niceSkills"].includes(c.kind)) {
+      const evidence = c.kind === "degree" ? e.degrees : c.kind === "certifications" ? e.certifications : e.skills;
+      const terms = screeningTerms(c.value);
+      matched = terms.filter((t) => evidence.some((v) => normalizeSkill(v) === normalizeSkill(t)));
+      missing = terms.filter((t) => !matched.includes(t));
+      fraction = terms.length ? matched.length / terms.length : 0;
+      unknown = missing.length > 0;
+      explanation = `${matched.length}/${terms.length} terms documented. ${missing.length ? `Not documented: ${missing.join(", ")}. Confirm with candidate; absence is not proof of lacking a qualification.` : "All requested terms documented."}`;
+    } else if (c.kind === "location") {
+      unknown = !e.location;
+      fraction = screeningTerms(c.value).some((v) => v.toLowerCase() === e.location.toLowerCase()) ? 1 : 0;
+      failed = !unknown && fraction === 0;
+      explanation = unknown ? "Location not supplied." : `Reported location: ${e.location}. Accepted locations: ${c.value}.`;
+    } else if (c.kind === "authorization") {
+      unknown = e.authorized === null; fraction = e.authorized === true ? 1 : 0; failed = e.authorized === false;
+      explanation = unknown ? "Authorization not supplied. Never inferred from nationality." : `Work authorization reported ${e.authorized ? "yes" : "no"}; verification required.`;
+    } else {
+      const value = c.kind === "experience" ? e.experienceYears : c.kind === "salary" ? e.salaryExpectation : e.noticeDays;
+      unknown = value === null;
+      const [minSalary, maxSalary] = c.value.split("-").map(Number);
+      const meets = value !== null && (c.kind === "experience" ? value >= Number(c.value) : c.kind === "salary" ? value <= maxSalary : value <= Number(c.value));
+      fraction = meets ? 1 : 0; failed = !unknown && !meets;
+      explanation = unknown ? "Not supplied; confirm with candidate." : `Reported: ${value}. Criterion: ${c.value}.${c.kind === "salary" && value! < minSalary ? " Below advertised minimum; confirm fair offer and expectations." : ""}`;
+    }
+    return { ...c, label: screeningLabels[c.kind], status: fraction === 1 ? "Pass" as const : failed ? "Fail" as const : "Partial" as const,
+      fraction, unknown, explanation, matched, missing };
+  });
+  const scored = checklist.filter((c) => c.mode === "SCORED");
+  const score = scored.length ? Math.round(100 * scored.reduce((n,c) => n + c.fraction * c.weight, 0) / scored.reduce((n,c) => n+c.weight, 0)) : null;
+  const knockoutFailed = checklist.some((c) => c.mode === "KNOCKOUT" && c.status === "Fail");
+  const needsReview = checklist.some((c) => c.unknown);
+  const recommendation = knockoutFailed ? "Reject" : needsReview ? "Maybe" : score === null || score >= 75 ? "Shortlist" : score >= 45 ? "Maybe" : "Reject";
+  return { score, recommendation, knockoutFailed, needsReview, checklist, algorithmVersion: "employer-screen-v1" };
+}
+
 export const levels = [
   "BEGINNER",
   "INTERMEDIATE",
