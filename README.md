@@ -101,3 +101,7 @@ Employers can configure company profiles and screening criteria, upload resumes 
 Use a high-entropy session secret, HTTPS-only cookies, and managed secrets in production. Configure `DATABASE_URL` with Supabase's transaction pooler and `DIRECT_URL` with its direct/session connection for migrations. Deploy the Vite output to a static host and set its API URL/CORS origin.
 
 For the proposed single-project Vercel Services deployment, see [Vercel setup](docs/VERCEL.md). The root configuration routes browser requests to the API on the same domain. Private resume-storage migration is still required before production use.
+
+### Firebase Hosting
+
+The Vite frontend is linked to the Firebase project `skillbridge-adrynth` and deploys to `https://skillbridge-adrynth.web.app`. Run `npm run deploy:firebase` from the repository root. Firebase Hosting serves `apps/web/dist`, caches fingerprinted assets, and rewrites client-side routes to `index.html`. The Express API is not deployed by this command; it requires a separately configured runtime with PostgreSQL credentials and durable private resume storage.
